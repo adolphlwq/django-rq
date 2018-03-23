@@ -72,7 +72,13 @@ def get_redis_connection(config, use_strict_redis=False):
     """
     Returns a redis connection from a connection config
     """
-    redis_cls = redis.StrictRedis if use_strict_redis else redis.Redis
+    if 'RQ_CONNECTION_CLASS' in config:
+        try:
+            redis_cls = import_attribute(config['RQ_CONNECTION_CLASS'])
+        except (ImportError, AttributeError) as exc:
+            raise Exception('import {} error'.format(config['RQ_CONNECTION_CLASS']))
+    else:
+        redis_cls = redis.StrictRedis if use_strict_redis else redis.Redis
 
     if 'URL' in config:
         return redis_cls.from_url(config['URL'], db=config.get('DB'))
